@@ -3,82 +3,65 @@ import streamlit as st
 # 🔐 password admin
 ADMIN_PASSWORD = "lucasplant6354"
 
-# ---------------- DADOS ---------------- #
+# ---------------- STATE ---------------- #
 
-if "videos" not in st.session_state:
-    st.session_state.videos = [
-        "Como regar plantas corretamente",
-        "Como plantar uma semente"
-    ]
+if "items" not in st.session_state:
+    st.session_state.items = []
 
-info_nova = [
-    "As plantas precisam de luz solar ☀️",
-    "Regar demasiado pode matar a planta 💧"
-]
+# ---------------- UI ---------------- #
 
-avisos = [
-    "Não partilhar passwords 🔒",
-    "Cuidado com plantas tóxicas ⚠️"
-]
-
-# ---------------- UI TOPO ---------------- #
-
-st.markdown(
-    "<h1 style='text-align:center;'>🍃 Plant Videos</h1>",
-    unsafe_allow_html=True
-)
-
+st.markdown("<h1 style='text-align:center;'>🍃 Plant Videos</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
-# ---------------- SIDEBAR ---------------- #
+menu = st.sidebar.selectbox("🌿 Menu", ["📺 Conteúdo", "➕ Admin"])
 
-menu = st.sidebar.selectbox(
-    "🌿 Menu",
-    ["🎥 Vídeos", "🆕 Informação", "⚠️ Avisos"]
-)
+# ---------------- CONTEÚDO ---------------- #
 
-# ---------------- VÍDEOS ---------------- #
+if menu == "📺 Conteúdo":
+    st.subheader("📺 Conteúdo")
 
-if menu == "🎥 Vídeos":
-    st.subheader("🎥 Vídeos")
+    if len(st.session_state.items) == 0:
+        st.info("Ainda não há vídeos 🌱")
 
-    for v in st.session_state.videos:
-        st.write("▶", v)
+    for item in st.session_state.items:
 
-    st.markdown("---")
+        st.markdown(f"## 🌿 {item['title']}")
 
-    st.subheader("➕ Adicionar vídeo (admin)")
+        # 🖼️ IMAGEM DO VÍDEO (thumbnail)
+        if item["image"]:
+            st.image(item["image"], use_container_width=True)
+
+        # 🎬 VÍDEO COM ÁUDIO
+        if item["video"]:
+            st.video(item["video"])
+
+        st.markdown("---")
+
+# ---------------- ADMIN ---------------- #
+
+elif menu == "➕ Admin":
+    st.subheader("🔐 Admin")
 
     password = st.text_input("Password", type="password")
 
     if password == ADMIN_PASSWORD:
-        novo_video = st.text_input("Nome do vídeo")
+
+        st.success("Acesso autorizado ✔️")
+
+        title = st.text_input("Título do vídeo")
+
+        image_url = st.text_input("Imagem do vídeo (thumbnail) 🖼️")
+
+        video_url = st.text_input("Link do vídeo (YouTube ou MP4) 🎬")
 
         if st.button("Adicionar vídeo"):
-            if novo_video:
-                st.session_state.videos.append(novo_video)
-                st.success("Vídeo adicionado com sucesso! 🌱")
+            if title:
+                st.session_state.items.append({
+                    "title": title,
+                    "image": image_url,
+                    "video": video_url
+                })
+                st.success("Vídeo adicionado 🌱")
 
     elif password:
-        st.error("Password incorreta!")
-
-# ---------------- INFO ---------------- #
-
-elif menu == "🆕 Informação":
-    st.subheader("🆕 Informação nova")
-
-    for i in info_nova:
-        st.write("🌱", i)
-
-# ---------------- AVISOS ---------------- #
-
-elif menu == "⚠️ Avisos":
-    st.subheader("⚠️ Avisos")
-
-    for a in avisos:
-        st.write("❗", a)
-
-# ---------------- FOOTER ---------------- #
-
-st.markdown("---")
-st.caption("🌿 Plant Videos App - feito por ti")
+        st.error("Password incorreta ❌")
