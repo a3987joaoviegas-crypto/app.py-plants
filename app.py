@@ -1,44 +1,20 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="🌿 Plants World Ultra Visual", layout="wide")
+st.set_page_config(page_title="Plants World", layout="wide")
 
 # ----------------------
-# CSS MODERNO
-# ----------------------
-st.markdown("""
-<style>
-.stApp { background: #0b1117; }
-
-.card{
-    background:#141824;
-    border-radius:22px;
-    padding:14px;
-    border:2px solid #2ecc71;
-    box-shadow:0px 0px 15px rgba(46,204,113,0.2);
-    margin-bottom:18px;
-    color:white;
-}
-
-.center{text-align:center;}
-
-h3 { margin:5px 0; }
-</style>
-""", unsafe_allow_html=True)
-
-# ----------------------
-# JARDIM
+# ESTADO
 # ----------------------
 if "jardim" not in st.session_state:
     st.session_state.jardim = []
 
 # ----------------------
-# IMAGEM ULTRA SEGURA
+# IMAGEM SEGURA
 # ----------------------
-def get_image(planta):
-
+def get_image(taxon):
     try:
-        photo = planta.get("default_photo")
+        photo = taxon.get("default_photo")
         if isinstance(photo, dict):
             return photo.get("medium_url") or photo.get("url")
     except:
@@ -47,144 +23,152 @@ def get_image(planta):
     return "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronde_de_foug%C3%A8re.jpg"
 
 # ----------------------
-# API PLANTAS (ROBUSTA)
+# API PLANTAS
 # ----------------------
-def get_plantas(query):
-
+def get_plants(query):
     try:
         r = requests.get(
-            f"https://api.inaturalist.org/v1/taxa?q={query}&taxon_id=47126&per_page=30&locale=pt-PT",
+            f"https://api.inaturalist.org/v1/taxa?q={query}&taxon_id=47126&per_page=25",
             timeout=5
         )
-        data = r.json().get("results", [])
+        return r.json().get("results", [])
     except:
-        data = []
+        return []
 
-    if not data:
-        r = requests.get(
-            "https://api.inaturalist.org/v1/taxa?q=plant&taxon_id=47126&per_page=30&locale=pt-PT"
+# ----------------------
+# IDENTIFICAÇÃO POR FOTO
+# ----------------------
+def identify(file):
+    try:
+        r = requests.post(
+            "https://api.inaturalist.org/v1/computervision/score_image",
+            files={"file": file},
+            timeout=15
         )
-        data = r.json().get("results", [])
-
-    return data
-
-# ----------------------
-# SLIDER ULTRA VISUAL (SEM INVENTAR FASES)
-# ----------------------
-def get_visual_state(img):
-
-    # em vez de mudar imagem falsa, usamos variação visual real
-    return [
-        ("🌿 Vista Geral", img),
-        ("🔍 Detalhe", img),
-        ("📸 Close Natural", img)
-    ]
+        return r.json().get("results", [])
+    except:
+        return []
 
 # ----------------------
-# CARD ULTRA VISUAL
+# CARD
 # ----------------------
-def card(planta, idx):
+def card(taxon, idx):
 
-    nome = (
-        planta.get("preferred_common_name")
-        or planta.get("common_name")
-        or planta.get("name","Planta")
-    )
+    nome = taxon.get("preferred_common_name") or taxon.get("name", "Planta")
+    cient = taxon.get("name", "")
 
-    cient = planta.get("name","")
+    img = get_image(taxon)
 
-    img = get_image(planta)
+    st.markdown('<div style="padding:10px;border:2px solid #2ecc71;border-radius:15px;margin-bottom:10px">', unsafe_allow_html=True)
 
-    fases = get_visual_state(img)
+    st.image(img, use_container_width=True)
 
-    key = f"fase_{idx}"
-    if key not in st.session_state:
-        st.session_state[key] = 0
+    st.markdown(f"### 🌱 {nome}")
+    st.markdown(f"*{cient}*")
 
-    st.markdown('<div class="card">', unsafe_allow_html=True)
-
-    st.image(fases[st.session_state[key]][1], use_container_width=True)
-
-    col1,col2,col3 = st.columns([1,2,1])
-
-    with col1:
-        if st.button("⬅️", key=f"p{idx}"):
-            st.session_state[key] = (st.session_state[key] - 1) % len(fases)
-
-    with col3:
-        if st.button("➡️", key=f"n{idx}"):
-            st.session_state[key] = (st.session_state[key] + 1) % len(fases)
-
-    with col2:
-        st.markdown(
-            f"<p class='center'>{fases[st.session_state[key]][0]}</p>",
-            unsafe_allow_html=True
-        )
-
-    st.markdown(f"""
-        <h3 class='center' style='color:#2ecc71'>{nome}</h3>
-        <p class='center' style='font-size:0.8em'>{cient}</p>
-    """, unsafe_allow_html=True)
-
-    # ⭐ JARDIM
-    if st.button("⭐ Guardar no Jardim", key=f"fav{idx}"):
+    if st.button(f"⭐ Guardar {nome}", key=idx):
         if nome not in st.session_state.jardim:
             st.session_state.jardim.append(nome)
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # ----------------------
 # GRID
 # ----------------------
 def grid(lista):
-    for i in range(0,len(lista),3):
+    for i in range(0, len(lista), 3):
         cols = st.columns(3)
         for j in range(3):
-            if i+j < len(lista):
+            if i + j < len(lista):
                 with cols[j]:
-                    card(lista[i+j], i+j)
+                    card(lista[i + j], i + j)
 
 # ----------------------
 # DADOS
 # ----------------------
-paises = [
-"Portugal","Espanha","França","Alemanha","Brasil","Estados Unidos",
-"China","Japão","Índia","Austrália","África do Sul","Egipto"
-]
+paises = ["Portugal", "Espanha", "França", "Brasil", "Estados Unidos", "China", "Japão"]
+florestas = ["Amazónia", "Congo", "Taiga", "Savana"]
 
-florestas = ["Amazónia","Congo","Taiga","Savana"]
+# ----------------------
+# VISION AI
+# ----------------------
+def vision():
+
+    st.title("📸 Vision AI")
+
+    file = st.file_uploader("Envia uma planta", type=["jpg", "png", "jpeg"])
+
+    if file:
+
+        st.image(file, use_container_width=True)
+
+        st.info("A identificar...")
+
+        results = identify(file)
+
+        if not results:
+            st.error("Não foi possível identificar.")
+            return
+
+        for i, r in enumerate(results[:5]):
+
+            taxon = r.get("taxon", {})
+
+            nome = taxon.get("preferred_common_name") or taxon.get("name", "Desconhecido")
+            cient = taxon.get("name", "")
+            img = get_image(taxon)
+            score = round(r.get("score", 0) * 100, 2)
+
+            st.markdown("---")
+            st.image(img, width=250)
+            st.markdown(f"### 🌱 {nome}")
+            st.markdown(f"*{cient}*")
+            st.markdown(f"🎯 {score}%")
+
+            if st.button(f"⭐ Guardar {nome}", key=nome):
+                if nome not in st.session_state.jardim:
+                    st.session_state.jardim.append(nome)
+
+# ----------------------
+# JARDIM
+# ----------------------
+def garden():
+
+    st.title("🌿 Jardim")
+
+    if not st.session_state.jardim:
+        st.info("Sem plantas guardadas")
+    else:
+        for p in st.session_state.jardim:
+            st.write("🌱", p)
 
 # ----------------------
 # SIDEBAR
 # ----------------------
 with st.sidebar:
-    st.title("🌿 Plants World Ultra Visual")
+    st.title("Plants World")
 
-    menu = ["🌍 Países","🌲 Florestas","🔬 Laboratório","⭐ Jardim"]
-    aba = st.radio("Navegação", menu)
+    menu = ["🌍 Países", "🌲 Florestas", "🔬 Laboratório", "📸 Vision AI", "⭐ Jardim"]
+    aba = st.radio("Menu", menu)
 
 # ----------------------
-# PÁGINAS
+# ROUTER
 # ----------------------
-
 if aba == "🌍 Países":
-    sel = st.selectbox("País:", paises)
-    grid(get_plantas(sel))
+    sel = st.selectbox("País", paises)
+    grid(get_plants(sel))
 
 elif aba == "🌲 Florestas":
-    sel = st.selectbox("Floresta:", florestas)
-    grid(get_plantas(sel))
+    sel = st.selectbox("Floresta", florestas)
+    grid(get_plants(sel))
 
 elif aba == "🔬 Laboratório":
-    q = st.text_input("Pesquisar planta:")
+    q = st.text_input("Pesquisar planta")
     if q:
-        grid(get_plantas(q))
+        grid(get_plants(q))
+
+elif aba == "📸 Vision AI":
+    vision()
 
 elif aba == "⭐ Jardim":
-    st.title("🌿 O Teu Jardim")
-
-    if not st.session_state.jardim:
-        st.info("Ainda não tens plantas guardadas 🌱")
-    else:
-        for p in st.session_state.jardim:
-            st.markdown(f"- 🌱 {p}")
+    garden()
