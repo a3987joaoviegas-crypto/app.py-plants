@@ -24,17 +24,32 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------------
+# DADOS CIDADES
+# ----------------------
+cidades_por_pais = {
+    "Portugal": ["Lisboa","Porto","Coimbra","Faro"],
+    "Espanha": ["Madrid","Barcelona","Valência","Sevilha"],
+    "França": ["Paris","Lyon","Marselha","Nice"],
+    "Brasil": ["São Paulo","Rio de Janeiro","Brasília","Salvador"],
+    "Estados Unidos": ["New York","Los Angeles","Chicago","Miami"],
+    "China": ["Pequim","Xangai","Shenzhen","Guangzhou"]
+}
+
+# ----------------------
 # IMAGEM SEGURA
 # ----------------------
 def get_image(planta):
-    return (
-        planta.get("default_photo", {}).get("medium_url")
-        or planta.get("default_photo", {}).get("url")
-        or "https://via.placeholder.com/400x300?text=Planta"
-    )
+    try:
+        photo = planta.get("default_photo")
+        if photo and isinstance(photo, dict):
+            return photo.get("medium_url") or photo.get("url")
+    except:
+        pass
+
+    return "https://via.placeholder.com/400x300?text=Planta"
 
 # ----------------------
-# PLANTAS (COM FALLBACK GARANTIDO)
+# BUSCAR PLANTAS (SEMPRE FUNCIONA)
 # ----------------------
 def get_plantas(query):
 
@@ -47,7 +62,6 @@ def get_plantas(query):
     except:
         data = []
 
-    # fallback universal (NUNCA vazio)
     if not data:
         r = requests.get(
             "https://api.inaturalist.org/v1/taxa?q=plant&taxon_id=47126&per_page=30&locale=pt-PT"
@@ -57,7 +71,24 @@ def get_plantas(query):
     return data
 
 # ----------------------
-# CARD COM SLIDER REAL
+# FASES INTELIGENTES
+# ----------------------
+def get_fases(planta, img):
+
+    fases = [
+        ("🌱 Bebé (folhas)", img),
+        ("🌸 Flor", img)
+    ]
+
+    nome = (planta.get("name","") + planta.get("common_name","")).lower()
+
+    if any(x in nome for x in ["fruit","tree","apple","orange","banana","berry"]):
+        fases.append(("🍎 Fruto", img))
+
+    return fases
+
+# ----------------------
+# CARD
 # ----------------------
 def card(planta, idx):
 
@@ -70,43 +101,37 @@ def card(planta, idx):
     cient = planta.get("name","")
 
     img = get_image(planta)
-    imagens = [img, img, img]
+
+    fases = get_fases(planta, img)
 
     key = f"fase_{idx}"
     if key not in st.session_state:
         st.session_state[key] = 0
 
-    fases = ["🌿 Folhas","🌸 Flores","🍎 Frutos"]
-
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    st.image(imagens[st.session_state[key]], use_container_width=True)
+    st.image(fases[st.session_state[key]][1], use_container_width=True)
 
     col1,col2,col3 = st.columns([1,2,1])
 
     with col1:
         if st.button("⬅️", key=f"p{idx}"):
-            st.session_state[key] = (st.session_state[key] - 1) % 3
+            st.session_state[key] = (st.session_state[key] - 1) % len(fases)
 
     with col3:
         if st.button("➡️", key=f"n{idx}"):
-            st.session_state[key] = (st.session_state[key] + 1) % 3
+            st.session_state[key] = (st.session_state[key] + 1) % len(fases)
 
     with col2:
         st.markdown(
-            f"<p class='center'>{fases[st.session_state[key]]}</p>",
+            f"<p class='center'>{fases[st.session_state[key]][0]}</p>",
             unsafe_allow_html=True
         )
 
-    # nome PT + científico
     st.markdown(f"""
         <h3 class='center' style='color:#2ecc71'>{nome}</h3>
         <p class='center' style='font-size:0.8em'>{cient}</p>
     """, unsafe_allow_html=True)
-
-    # ☀️ SOL corrigido (sem "Desconhecido" vazio)
-    sol = planta.get("light") or planta.get("sunlight") or "☀️ Informação não disponível"
-    st.write(f"☀️ Sol: {sol}")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -114,7 +139,7 @@ def card(planta, idx):
 # GRID
 # ----------------------
 def grid(lista):
-    for i in range(0, len(lista), 3):
+    for i in range(0,len(lista),3):
         cols = st.columns(3)
         for j in range(3):
             if i+j < len(lista):
@@ -122,7 +147,7 @@ def grid(lista):
                     card(lista[i+j], i+j)
 
 # ----------------------
-# LISTA PAÍSES (GARANTIDO FUNCIONAR)
+# PAÍSES
 # ----------------------
 paises = [
 "Portugal","Espanha","França","Alemanha","Itália","Brasil","Estados Unidos",
@@ -150,6 +175,11 @@ with st.sidebar:
 
 if aba == "🌍 Países":
     sel = st.selectbox("Escolhe país:", paises)
+
+    st.subheader("🏙️ Cidades")
+    st.write(" | ".join(cidades_por_pais.get(sel, ["Cidade principal","Capital"])))
+
+    st.subheader("🌿 Plantas")
     grid(get_plantas(sel))
 
 elif aba == "🌲 Florestas":
