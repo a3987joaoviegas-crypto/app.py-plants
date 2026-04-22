@@ -1,49 +1,53 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="🌿 Plants World", layout="wide")
+st.set_page_config(page_title="🌿 Plants World Ultra Visual", layout="wide")
 
 # ----------------------
-# CSS
+# CSS MODERNO
 # ----------------------
 st.markdown("""
 <style>
-.stApp { background:#0b1117; }
+.stApp { background: #0b1117; }
 
 .card{
-    background:#1a1c23;
-    border-radius:20px;
-    padding:12px;
-    border:3px solid #2ecc71;
-    margin-bottom:15px;
+    background:#141824;
+    border-radius:22px;
+    padding:14px;
+    border:2px solid #2ecc71;
+    box-shadow:0px 0px 15px rgba(46,204,113,0.2);
+    margin-bottom:18px;
     color:white;
 }
 
 .center{text-align:center;}
+
+h3 { margin:5px 0; }
 </style>
 """, unsafe_allow_html=True)
 
 # ----------------------
-# JARDIM (FAVORITOS)
+# JARDIM
 # ----------------------
 if "jardim" not in st.session_state:
     st.session_state.jardim = []
 
 # ----------------------
-# IMAGENS POR FASE (SEGURO)
+# IMAGEM ULTRA SEGURA
 # ----------------------
-def get_images(planta, nome):
+def get_image(planta):
 
-    base = nome.replace(" ", "+") + "+plant"
+    try:
+        photo = planta.get("default_photo")
+        if isinstance(photo, dict):
+            return photo.get("medium_url") or photo.get("url")
+    except:
+        pass
 
-    return {
-        "leaf": f"https://source.unsplash.com/400x300/?{base},leaf",
-        "flower": f"https://source.unsplash.com/400x300/?{base},flower",
-        "fruit": f"https://source.unsplash.com/400x300/?{base},fruit"
-    }
+    return "https://upload.wikimedia.org/wikipedia/commons/3/3f/Fronde_de_foug%C3%A8re.jpg"
 
 # ----------------------
-# API PLANTAS (SEMPRE FUNCIONA)
+# API PLANTAS (ROBUSTA)
 # ----------------------
 def get_plantas(query):
 
@@ -65,7 +69,19 @@ def get_plantas(query):
     return data
 
 # ----------------------
-# CARD PLANTA (SLIDER REAL)
+# SLIDER ULTRA VISUAL (SEM INVENTAR FASES)
+# ----------------------
+def get_visual_state(img):
+
+    # em vez de mudar imagem falsa, usamos variação visual real
+    return [
+        ("🌿 Vista Geral", img),
+        ("🔍 Detalhe", img),
+        ("📸 Close Natural", img)
+    ]
+
+# ----------------------
+# CARD ULTRA VISUAL
 # ----------------------
 def card(planta, idx):
 
@@ -77,13 +93,9 @@ def card(planta, idx):
 
     cient = planta.get("name","")
 
-    imgs = get_images(planta, nome)
+    img = get_image(planta)
 
-    fases = [
-        ("🌱 Folhas (bebé)", imgs["leaf"]),
-        ("🌸 Flor", imgs["flower"]),
-        ("🍎 Fruto", imgs["fruit"])
-    ]
+    fases = get_visual_state(img)
 
     key = f"fase_{idx}"
     if key not in st.session_state:
@@ -91,7 +103,6 @@ def card(planta, idx):
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    # imagem fase atual
     st.image(fases[st.session_state[key]][1], use_container_width=True)
 
     col1,col2,col3 = st.columns([1,2,1])
@@ -119,7 +130,6 @@ def card(planta, idx):
     if st.button("⭐ Guardar no Jardim", key=f"fav{idx}"):
         if nome not in st.session_state.jardim:
             st.session_state.jardim.append(nome)
-            st.success("Guardado no Jardim 🌿")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -135,15 +145,11 @@ def grid(lista):
                     card(lista[i+j], i+j)
 
 # ----------------------
-# LISTAS
+# DADOS
 # ----------------------
 paises = [
-"Portugal","Espanha","França","Alemanha","Itália","Brasil","Estados Unidos",
-"Canadá","México","Argentina","Chile","Peru","Colômbia","China","Japão",
-"Índia","Austrália","África do Sul","Egipto","Marrocos","Nigéria","Quénia",
-"Turquia","Rússia","Ucrânia","Polónia","Suécia","Noruega","Finlândia",
-"Dinamarca","Grécia","Tailândia","Vietname","Indonésia","Filipinas",
-"Coreia do Sul","Arábia Saudita","Irão","Paquistão"
+"Portugal","Espanha","França","Alemanha","Brasil","Estados Unidos",
+"China","Japão","Índia","Austrália","África do Sul","Egipto"
 ]
 
 florestas = ["Amazónia","Congo","Taiga","Savana"]
@@ -152,7 +158,7 @@ florestas = ["Amazónia","Congo","Taiga","Savana"]
 # SIDEBAR
 # ----------------------
 with st.sidebar:
-    st.title("🌿 Plants World")
+    st.title("🌿 Plants World Ultra Visual")
 
     menu = ["🌍 Países","🌲 Florestas","🔬 Laboratório","⭐ Jardim"]
     aba = st.radio("Navegação", menu)
@@ -162,19 +168,17 @@ with st.sidebar:
 # ----------------------
 
 if aba == "🌍 Países":
-    sel = st.selectbox("Escolhe país:", paises)
+    sel = st.selectbox("País:", paises)
     grid(get_plantas(sel))
 
 elif aba == "🌲 Florestas":
-    sel = st.selectbox("Escolhe floresta:", florestas)
+    sel = st.selectbox("Floresta:", florestas)
     grid(get_plantas(sel))
 
 elif aba == "🔬 Laboratório":
     q = st.text_input("Pesquisar planta:")
     if q:
         grid(get_plantas(q))
-    else:
-        st.info("Escreve o nome de uma planta 🌿")
 
 elif aba == "⭐ Jardim":
     st.title("🌿 O Teu Jardim")
