@@ -1,67 +1,52 @@
-import streamlit as st
+def card(planta, idx):
+    nome = (planta.get('common_name') or planta.get('scientific_name','Planta')).title()
+    cient = planta.get('scientific_name','Desconhecido')
 
-# 🔐 password admin
-ADMIN_PASSWORD = "lucasplant6354"
+    imagens = get_imgs(nome)
 
-# ---------------- STATE ---------------- #
+    sol = planta.get('sunlight','Desconhecido')
+    agua = planta.get('watering','Desconhecido')
 
-if "items" not in st.session_state:
-    st.session_state.items = []
+    st.markdown(f"""
+    <div class="card">
 
-# ---------------- UI ---------------- #
+        <div id="slider-{idx}">
+            <img src="{imagens[0]}" class="img" id="img-{idx}">
+            
+            <div style="margin-top:5px;">
+                <button onclick="prev{idx}()">⬅️</button>
+                <button onclick="next{idx}()">➡️</button>
+            </div>
 
-st.markdown("<h1 style='text-align:center;'>🍃 Plant Videos</h1>", unsafe_allow_html=True)
-st.markdown("---")
+            <p id="label-{idx}">🌿 Folhas</p>
+        </div>
 
-menu = st.sidebar.selectbox("🌿 Menu", ["📺 Conteúdo", "➕ Admin"])
+        <h4 style="color:#2ecc71;">{nome}</h4>
+        <p style="font-size:0.8em; font-style:italic;">{cient}</p>
 
-# ---------------- CONTEÚDO ---------------- #
+        <p>☀️ <b>Sol:</b> {sol}</p>
+        <p>💧 <b>Água:</b> {agua}</p>
 
-if menu == "📺 Conteúdo":
-    st.subheader("📺 Conteúdo")
+    </div>
 
-    if len(st.session_state.items) == 0:
-        st.info("Ainda não há vídeos 🌱")
+    <script>
+    var imgs{idx} = ["{imagens[0]}", "{imagens[1]}", "{imagens[2]}"];
+    var labels{idx} = ["🌿 Folhas","🌸 Flores","🍎 Frutos"];
+    var i{idx} = 0;
 
-    for item in st.session_state.items:
+    function update{idx}() {{
+        document.getElementById("img-{idx}").src = imgs{idx}[i{idx}];
+        document.getElementById("label-{idx}").innerText = labels{idx}[i{idx}];
+    }}
 
-        st.markdown(f"## 🌿 {item['title']}")
+    function next{idx}() {{
+        i{idx} = (i{idx} + 1) % imgs{idx}.length;
+        update{idx}();
+    }}
 
-        # 🖼️ IMAGEM DO VÍDEO (thumbnail)
-        if item["image"]:
-            st.image(item["image"], use_container_width=True)
-
-        # 🎬 VÍDEO COM ÁUDIO
-        if item["video"]:
-            st.video(item["video"])
-
-        st.markdown("---")
-
-# ---------------- ADMIN ---------------- #
-
-elif menu == "➕ Admin":
-    st.subheader("🔐 Admin")
-
-    password = st.text_input("Password", type="password")
-
-    if password == ADMIN_PASSWORD:
-
-        st.success("Acesso autorizado ✔️")
-
-        title = st.text_input("Título do vídeo")
-
-        image_url = st.text_input("Imagem do vídeo (thumbnail) 🖼️")
-
-        video_url = st.text_input("Link do vídeo (YouTube ou MP4) 🎬")
-
-        if st.button("Adicionar vídeo"):
-            if title:
-                st.session_state.items.append({
-                    "title": title,
-                    "image": image_url,
-                    "video": video_url
-                })
-                st.success("Vídeo adicionado 🌱")
-
-    elif password:
-        st.error("Password incorreta ❌")
+    function prev{idx}() {{
+        i{idx} = (i{idx} - 1 + imgs{idx}.length) % imgs{idx}.length;
+        update{idx}();
+    }}
+    </script>
+    """, unsafe_allow_html=True)
