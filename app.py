@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="Plants World", layout="wide")
+st.set_page_config(page_title="🌿 Plants World", layout="wide")
 
 # ----------------------
 # ESTADO
@@ -36,7 +36,7 @@ def get_plants(query):
         return []
 
 # ----------------------
-# IDENTIFICAÇÃO POR FOTO
+# IA CÂMARA
 # ----------------------
 def identify(file):
     try:
@@ -56,17 +56,18 @@ def card(taxon, idx):
 
     nome = taxon.get("preferred_common_name") or taxon.get("name", "Planta")
     cient = taxon.get("name", "")
-
     img = get_image(taxon)
 
-    st.markdown('<div style="padding:10px;border:2px solid #2ecc71;border-radius:15px;margin-bottom:10px">', unsafe_allow_html=True)
+    st.markdown("""
+    <div style="border:2px solid #2ecc71;padding:10px;border-radius:15px;margin-bottom:10px">
+    """, unsafe_allow_html=True)
 
     st.image(img, use_container_width=True)
 
     st.markdown(f"### 🌱 {nome}")
     st.markdown(f"*{cient}*")
 
-    if st.button(f"⭐ Guardar {nome}", key=idx):
+    if st.button(f"⭐ Jardim {nome}", key=idx):
         if nome not in st.session_state.jardim:
             st.session_state.jardim.append(nome)
 
@@ -86,44 +87,46 @@ def grid(lista):
 # ----------------------
 # DADOS
 # ----------------------
-paises = ["Portugal", "Espanha", "França", "Brasil", "Estados Unidos", "China", "Japão"]
-florestas = ["Amazónia", "Congo", "Taiga", "Savana"]
+paises = ["Portugal","Espanha","França","Brasil","Estados Unidos","China","Japão"]
+florestas = ["Amazónia","Congo","Taiga","Savana"]
 
 # ----------------------
-# VISION AI
+# VISION AI (CÂMARA)
 # ----------------------
 def vision():
 
     st.title("📸 Vision AI")
 
-    file = st.file_uploader("Envia uma planta", type=["jpg", "png", "jpeg"])
+    foto = st.camera_input("Tira uma foto da planta")
 
-    if file:
+    if foto:
 
-        st.image(file, use_container_width=True)
+        st.image(foto, use_container_width=True)
 
-        st.info("A identificar...")
+        st.info("A identificar planta...")
 
-        results = identify(file)
+        results = identify(foto)
 
         if not results:
-            st.error("Não foi possível identificar.")
+            st.error("Não identificado.")
             return
 
-        for i, r in enumerate(results[:5]):
+        for r in results[:5]:
 
             taxon = r.get("taxon", {})
 
             nome = taxon.get("preferred_common_name") or taxon.get("name", "Desconhecido")
             cient = taxon.get("name", "")
+
             img = get_image(taxon)
             score = round(r.get("score", 0) * 100, 2)
 
             st.markdown("---")
             st.image(img, width=250)
+
             st.markdown(f"### 🌱 {nome}")
             st.markdown(f"*{cient}*")
-            st.markdown(f"🎯 {score}%")
+            st.markdown(f"🎯 Confiança: {score}%")
 
             if st.button(f"⭐ Guardar {nome}", key=nome):
                 if nome not in st.session_state.jardim:
@@ -137,7 +140,7 @@ def garden():
     st.title("🌿 Jardim")
 
     if not st.session_state.jardim:
-        st.info("Sem plantas guardadas")
+        st.info("Ainda vazio 🌱")
     else:
         for p in st.session_state.jardim:
             st.write("🌱", p)
@@ -146,14 +149,15 @@ def garden():
 # SIDEBAR
 # ----------------------
 with st.sidebar:
-    st.title("Plants World")
+    st.title("🌿 Plants World")
 
-    menu = ["🌍 Países", "🌲 Florestas", "🔬 Laboratório", "📸 Vision AI", "⭐ Jardim"]
+    menu = ["🌍 Países","🌲 Florestas","🔬 Laboratório","📸 Vision AI","⭐ Jardim"]
     aba = st.radio("Menu", menu)
 
 # ----------------------
 # ROUTER
 # ----------------------
+
 if aba == "🌍 Países":
     sel = st.selectbox("País", paises)
     grid(get_plants(sel))
