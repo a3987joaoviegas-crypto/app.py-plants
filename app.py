@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="Plants World", layout="wide")
+st.set_page_config(page_title="🌿 Plants World", layout="wide")
 
 # ----------------------
 # ESTADO
@@ -36,27 +36,16 @@ def get_plants(query):
         return []
 
 # ----------------------
-# 🔥 IA FORTE (MELHORADA)
+# IA IDENTIFICAÇÃO (CÂMARA)
 # ----------------------
 def identify(file):
-
     try:
         r = requests.post(
             "https://api.inaturalist.org/v1/computervision/score_image",
             files={"file": file},
             timeout=15
         )
-
-        data = r.json().get("results", [])
-
-        if not data:
-            return []
-
-        # ordenar por confiança
-        data = sorted(data, key=lambda x: x.get("score", 0), reverse=True)
-
-        return data
-
+        return r.json().get("results", [])
     except:
         return []
 
@@ -65,14 +54,18 @@ def identify(file):
 # ----------------------
 def card(taxon, idx):
 
-    nome = taxon.get("preferred_common_name") or taxon.get("name", "Planta")
+    nome = (
+        taxon.get("preferred_common_name")
+        or taxon.get("name")
+        or "Planta"
+    )
+
     cient = taxon.get("name", "")
     img = get_image(taxon)
 
-    st.markdown(
-        "<div style='border:2px solid #2ecc71;padding:10px;border-radius:15px;margin-bottom:10px'>",
-        unsafe_allow_html=True
-    )
+    st.markdown("""
+    <div style="border:2px solid #2ecc71;padding:10px;border-radius:15px;margin-bottom:10px">
+    """, unsafe_allow_html=True)
 
     st.image(img, use_container_width=True)
 
@@ -97,44 +90,48 @@ def grid(lista):
                     card(lista[i + j], i + j)
 
 # ----------------------
-# VISION AI MELHORADO
+# DADOS
+# ----------------------
+paises = ["Portugal","Espanha","França","Brasil","Estados Unidos","China","Japão"]
+florestas = ["Amazónia","Congo","Taiga","Savana"]
+
+# ----------------------
+# VISION AI (CÂMARA REAL)
 # ----------------------
 def vision():
 
-    st.title("📸 Vision AI Melhorado")
+    st.title("📸 Vision AI")
 
-    file = st.file_uploader("Tira foto da planta", type=["jpg","png","jpeg"])
+    file = st.camera_input("Tira uma foto da planta")
 
     if file:
 
         st.image(file, use_container_width=True)
 
-        st.info("A analisar com IA forte...")
+        st.info("A identificar planta...")
 
         results = identify(file)
 
-        # ❗ fallback inteligente
         if not results:
-            st.warning("🌱 Não foi possível identificar com confiança. Tenta aproximar mais a planta.")
+            st.warning("🌱 Não foi possível identificar com certeza.")
             return
 
-        st.success("🌿 Possíveis resultados:")
-
-        # mostra TOP 5
         for r in results[:5]:
 
             taxon = r.get("taxon", {})
 
-            nome = taxon.get("preferred_common_name") or taxon.get("name", "Desconhecido")
-            cient = taxon.get("name", "")
+            nome = (
+                taxon.get("preferred_common_name")
+                or taxon.get("name")
+                or "Desconhecido"
+            )
 
+            cient = taxon.get("name", "")
+            img = get_image(taxon)
             score = round(r.get("score", 0) * 100, 2)
 
-            # filtrar lixo fraco
             if score < 10:
                 continue
-
-            img = get_image(taxon)
 
             st.markdown("---")
             st.image(img, width=250)
@@ -155,7 +152,7 @@ def garden():
     st.title("🌿 Jardim")
 
     if not st.session_state.jardim:
-        st.info("Ainda não tens plantas guardadas 🌱")
+        st.info("Ainda vazio 🌱")
     else:
         for p in st.session_state.jardim:
             st.write("🌱", p)
@@ -164,16 +161,10 @@ def garden():
 # SIDEBAR
 # ----------------------
 with st.sidebar:
-    st.title("Plants World")
+    st.title("🌿 Plants World")
 
     menu = ["🌍 Países","🌲 Florestas","🔬 Laboratório","📸 Vision AI","⭐ Jardim"]
     aba = st.radio("Menu", menu)
-
-# ----------------------
-# DADOS
-# ----------------------
-paises = ["Portugal","Espanha","França","Brasil","Estados Unidos","China","Japão"]
-florestas = ["Amazónia","Congo","Taiga","Savana"]
 
 # ----------------------
 # ROUTER
