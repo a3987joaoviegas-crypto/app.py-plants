@@ -24,32 +24,26 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------------
-# DADOS CIDADES
+# JARDIM (FAVORITOS)
 # ----------------------
-cidades_por_pais = {
-    "Portugal": ["Lisboa","Porto","Coimbra","Faro"],
-    "Espanha": ["Madrid","Barcelona","Valência","Sevilha"],
-    "França": ["Paris","Lyon","Marselha","Nice"],
-    "Brasil": ["São Paulo","Rio de Janeiro","Brasília","Salvador"],
-    "Estados Unidos": ["New York","Los Angeles","Chicago","Miami"],
-    "China": ["Pequim","Xangai","Shenzhen","Guangzhou"]
-}
+if "jardim" not in st.session_state:
+    st.session_state.jardim = []
 
 # ----------------------
-# IMAGEM SEGURA
+# IMAGENS POR FASE (SEGURO)
 # ----------------------
-def get_image(planta):
-    try:
-        photo = planta.get("default_photo")
-        if photo and isinstance(photo, dict):
-            return photo.get("medium_url") or photo.get("url")
-    except:
-        pass
+def get_images(planta, nome):
 
-    return "https://via.placeholder.com/400x300?text=Planta"
+    base = nome.replace(" ", "+") + "+plant"
+
+    return {
+        "leaf": f"https://source.unsplash.com/400x300/?{base},leaf",
+        "flower": f"https://source.unsplash.com/400x300/?{base},flower",
+        "fruit": f"https://source.unsplash.com/400x300/?{base},fruit"
+    }
 
 # ----------------------
-# BUSCAR PLANTAS (SEMPRE FUNCIONA)
+# API PLANTAS (SEMPRE FUNCIONA)
 # ----------------------
 def get_plantas(query):
 
@@ -71,24 +65,7 @@ def get_plantas(query):
     return data
 
 # ----------------------
-# FASES INTELIGENTES
-# ----------------------
-def get_fases(planta, img):
-
-    fases = [
-        ("🌱 Bebé (folhas)", img),
-        ("🌸 Flor", img)
-    ]
-
-    nome = (planta.get("name","") + planta.get("common_name","")).lower()
-
-    if any(x in nome for x in ["fruit","tree","apple","orange","banana","berry"]):
-        fases.append(("🍎 Fruto", img))
-
-    return fases
-
-# ----------------------
-# CARD
+# CARD PLANTA (SLIDER REAL)
 # ----------------------
 def card(planta, idx):
 
@@ -100,9 +77,13 @@ def card(planta, idx):
 
     cient = planta.get("name","")
 
-    img = get_image(planta)
+    imgs = get_images(planta, nome)
 
-    fases = get_fases(planta, img)
+    fases = [
+        ("🌱 Folhas (bebé)", imgs["leaf"]),
+        ("🌸 Flor", imgs["flower"]),
+        ("🍎 Fruto", imgs["fruit"])
+    ]
 
     key = f"fase_{idx}"
     if key not in st.session_state:
@@ -110,6 +91,7 @@ def card(planta, idx):
 
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
+    # imagem fase atual
     st.image(fases[st.session_state[key]][1], use_container_width=True)
 
     col1,col2,col3 = st.columns([1,2,1])
@@ -133,6 +115,12 @@ def card(planta, idx):
         <p class='center' style='font-size:0.8em'>{cient}</p>
     """, unsafe_allow_html=True)
 
+    # ⭐ JARDIM
+    if st.button("⭐ Guardar no Jardim", key=f"fav{idx}"):
+        if nome not in st.session_state.jardim:
+            st.session_state.jardim.append(nome)
+            st.success("Guardado no Jardim 🌿")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ----------------------
@@ -147,7 +135,7 @@ def grid(lista):
                     card(lista[i+j], i+j)
 
 # ----------------------
-# PAÍSES
+# LISTAS
 # ----------------------
 paises = [
 "Portugal","Espanha","França","Alemanha","Itália","Brasil","Estados Unidos",
@@ -166,7 +154,7 @@ florestas = ["Amazónia","Congo","Taiga","Savana"]
 with st.sidebar:
     st.title("🌿 Plants World")
 
-    menu = ["🌍 Países","🌲 Florestas","🔬 Laboratório"]
+    menu = ["🌍 Países","🌲 Florestas","🔬 Laboratório","⭐ Jardim"]
     aba = st.radio("Navegação", menu)
 
 # ----------------------
@@ -175,11 +163,6 @@ with st.sidebar:
 
 if aba == "🌍 Países":
     sel = st.selectbox("Escolhe país:", paises)
-
-    st.subheader("🏙️ Cidades")
-    st.write(" | ".join(cidades_por_pais.get(sel, ["Cidade principal","Capital"])))
-
-    st.subheader("🌿 Plantas")
     grid(get_plantas(sel))
 
 elif aba == "🌲 Florestas":
@@ -192,3 +175,12 @@ elif aba == "🔬 Laboratório":
         grid(get_plantas(q))
     else:
         st.info("Escreve o nome de uma planta 🌿")
+
+elif aba == "⭐ Jardim":
+    st.title("🌿 O Teu Jardim")
+
+    if not st.session_state.jardim:
+        st.info("Ainda não tens plantas guardadas 🌱")
+    else:
+        for p in st.session_state.jardim:
+            st.markdown(f"- 🌱 {p}")
